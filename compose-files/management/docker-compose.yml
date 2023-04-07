@@ -1,0 +1,66 @@
+version: "3.9"
+services:
+
+  ########## Container Management ##########
+
+  ## Portainer - WebUI for Containers
+  portainer:
+    # user: $PUID
+    container_name: portainer
+    image: portainer/portainer-ee:latest
+    restart: always
+    command: -H tcp://socket-proxy:2375
+    networks:
+      - traefik_proxy
+      - socket_proxy
+    ports:
+      - "9000:9000"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      # - /var/run/docker.sock:/var/run/docker.sock:ro # Connect to docker socket proxy tcp://docker-socket-proxy:2375
+      - $DOCKER_DIR/configs/portainer:/data # Change to local directory if you want to save/transfer config locally
+    environment:
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.portainer-rtr.entrypoints=https"
+      - "traefik.http.routers.portainer-rtr.rule=Host(`portainer.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.portainer-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.portainer-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.portainer-rtr.service=portainer-svc"
+      - "traefik.http.services.portainer-svc.loadbalancer.server.port=9000"
+
+  ## Homarr - Home Dashboard
+  homarr:
+    container_name: homarr
+    image: ghcr.io/ajnart/homarr:latest
+    networks:
+      - traefik_proxy
+    restart: unless-stopped
+    volumes:
+      - $DOCKER_DIR/configs/homarr:/app/data/configs
+      - $DOCKER_DIR/configs/homarr/icons:/app/public/icons
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - '7575:7575'
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.homarr-rtr.entrypoints=https"
+      - "traefik.http.routers.homarr-rtr.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.homarr-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.homarr-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.homarr-rtr.service=homarr-svc"
+      - "traefik.http.services.homarr-svc.loadbalancer.server.port=7575"
+
+networks:
+  traefik_proxy:
+    external: true
+  socket_proxy:
+    external: true

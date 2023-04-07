@@ -1,0 +1,5 @@
+# Redirect to https
+[http.middlewares]
+  [http.middlewares.ssl-redirect.redirectScheme]
+    scheme = "https"
+    permanent = true

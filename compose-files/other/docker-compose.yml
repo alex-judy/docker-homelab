@@ -1,0 +1,182 @@
+version: "3.9"
+services:
+
+  ########## Other ##########
+
+  ## VSCode - VSCode Editing
+  vscode:
+    #    user: $PUID:$PGID
+    image: linuxserver/code-server:latest
+    container_name: vscode
+    restart: always
+    networks:
+      - traefik_proxy
+    #    ports:
+    #      - "8080:8080"
+    #    security_opt:
+    #      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/configs/vscode:/config
+    environment:
+      - PUID
+      - PGID
+      - TZ
+      # - PASSWORD=GjhnTkLerv49Qp #optional
+      # - HASHED_PASSWORD= #optional
+      - SUDO_PASSWORD=${VSCODE_PASSWORD} #optional
+      # - SUDO_PASSWORD_HASH= #optional
+      - PROXY_DOMAIN=vscode.${DOMAIN_NAME}
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.vscode-rtr.entrypoints=https"
+      - "traefik.http.routers.vscode-rtr.rule=Host(`vscode.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.vscode-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.vscode-rtr.service=vscode-svc"
+      - "traefik.http.services.vscode-svc.loadbalancer.server.port=8443"
+
+  ## Davos - An FTP Automation Tool
+  davos:
+    container_name: davos
+    image: linuxserver/davos:latest
+    restart: always
+    networks:
+      - traefik_proxy
+    ports:
+      - "8112:8080"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/configs/davos:/config
+      - $DOWNLOADS_DIR:/downloads
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.davos-rtr.entrypoints=https"
+      - "traefik.http.routers.davos-rtr.rule=Host(`davos.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.davos-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.davos-rtr.service=davos-svc"
+      - "traefik.http.services.davos-svc.loadbalancer.server.port=8080"
+
+  ## Syncthing – Continuous File Synchronization
+  ## Fix inotify limit error - Need to run on host
+  #https://docs.syncthing.net/users/faq.html#inotify-limits
+  # echo "fs.inotify.max_user_watches=204800" | sudo tee -a /etc/sysctl.d/90-override.conf
+  # This only takes effect after a reboot. To adjust the limit immediately, run:
+  # sudo sh -c 'echo 204800 > /proc/sys/fs/inotify/max_user_watches'
+
+  syncthing:
+    container_name: syncthing
+    image: linuxserver/syncthing:latest
+    restart: always
+    networks:
+      - traefik_proxy
+      - socket_proxy
+    ports:
+      - "8384:8384" # Application WebUI
+      - "22000:22000" # Listening port
+      - "21027:21027/udp" # Protocol discovery
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/data/syncthing:/data/default
+      - $DOCKER_DIR/scripts/syncthing:/data/scripts
+      - $DOCKER_DIR/configs/syncthing:/config
+    environment:
+      - PUID
+      - PGID
+      - TZ
+      - UMASK_SET=022
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.syncthing-rtr.entrypoints=https"
+      - "traefik.http.routers.syncthing-rtr.rule=Host(`syncthing.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.syncthing-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.syncthing-rtr.service=syncthing-svc"
+      - "traefik.http.services.syncthing-svc.loadbalancer.server.port=8384"
+
+  ## Home Assistant - Home Automation Hub
+  ## Check config with:
+  # docker exec -it hass hass --script check_config -c /config
+
+  hass:
+    container_name: hass
+    image: homeassistant/home-assistant:latest
+    restart: always
+    #    privileged: true
+    networks:
+      - traefik_proxy
+      # - mqtt
+    ports:
+      - "8123:8123"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/configs/hass:/config
+    environment:
+      - TZ=$TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.hass-rtr.entrypoints=https"
+      - "traefik.http.routers.hass-rtr.rule=Host(`hass.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.hass-rtr.priority=10"
+      ## Middlewares
+      - "traefik.http.routers.hass-rtr.middlewares=secure-headers@file"
+      ## HTTP Services
+      - "traefik.http.routers.hass-rtr.service=hass-svc"
+      - "traefik.http.services.hass-svc.loadbalancer.server.port=8123"
+      ## API Forward Auth Bypass
+      - "traefik.http.routers.hass-bypass.entrypoints=https"
+      - "traefik.http.routers.hass-bypass.rule=(Host(`hass.${DOMAIN_NAME}`) && PathPrefix(`/api/`))"
+      - "traefik.http.routers.hass-bypass.priority=20"
+      - "traefik.http.routers.hass-bypass.middlewares=secure-headers@file"
+      - "traefik.http.routers.hass-bypass.service=hass-svc"
+
+  filebrowser:
+    container_name: filebrowser
+    image: hurlenko/filebrowser:latest
+    restart: always
+    networks:
+      - traefik_proxy
+      - socket_proxy
+    ports:
+      - 8585:8080
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/data/filebrowser:/data
+      - $DOCKER_DIR/configs/filebrowser:/config
+    environment:
+      - PUID
+      - PGID
+      - TZ
+      - FB_BASEURL=/
+      - VIRTUAL_HOST=filebrowser.${DOMAIN_NAME}
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.filebrowser-rtr.entrypoints=https"
+      - "traefik.http.routers.filebrowser-rtr.rule=Host(`filebrowser.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.filebrowser-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.filebrowser-rtr.service=filebrowser-svc"
+      - "traefik.http.services.filebrowser-svc.loadbalancer.server.port=8080"
+
+networks:
+  traefik_proxy:
+    external: true
+  socket_proxy:
+    external: true

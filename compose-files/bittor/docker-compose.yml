@@ -1,0 +1,64 @@
+version: "3.9"
+services:
+
+  ## Transmission with VPN – Bittorrent Downloader
+  transmission-vpn:
+    container_name: transmission-vpn
+    image: haugene/transmission-openvpn:latest
+    cap_add:
+      - NET_ADMIN
+    # devices:
+    #   - /dev/net/tun
+    restart: always
+    networks:
+      - traefik_proxy
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "9091:9091"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - $DOCKER_DIR/data/transmission-vpn:/data
+      - $DOCKER_DIR/shared:/shared
+      - $DOWNLOADS_DIR:/data/downloads
+    environment:
+      - UMASK_SET=2
+      - PIA_OPENVPN_CONFIG_BUNDLE=openvpn-tcp
+      - OPENVPN_PROVIDER=PIA
+      - OPENVPN_USERNAME
+      - OPENVPN_PASSWORD
+      - OPENVPN_CONFIG=us_chicago
+      - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
+      - LOCAL_NETWORK=192.168.1.0/24
+      - PUID
+      - PGID
+      - TZ
+      - TRANSMISSION_WEB_UI=combustion
+      - TRANSMISSION_RPC_AUTHENTICATION_REQUIRED="false"
+      - TRANSMISSION_RPC_HOST_WHITELIST="127.0.0.1, $SERVER_IP"
+      - DISABLE_PORT_UPDATER=yes
+      - TRANSMISSION_INCOMPLETE_DIR="/data/downloads/torrents/incomplete"
+      - TRANSMISSION_INCOMPLETE_DIR_ENABLED="true"
+      - TRANSMISSION_WATCH_DIR_ENABLED="false"
+      - TRANSMISSION_DOWNLOAD_DIR="/data/downloads/torrents/completed"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.transmission-vpn-rtr.entrypoints=https"
+      - "traefik.http.routers.transmission-vpn-rtr.rule=Host(`trans.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.transmission-vpn-rtr.middlewares=rate-limit@file, chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.transmission-vpn-rtr.service=transmission-vpn-svc"
+      - "traefik.http.services.transmission-vpn-svc.loadbalancer.server.port=9091"
+
+networks:
+  traefik_proxy:
+    external: true
+  socket_proxy:
+    external: true

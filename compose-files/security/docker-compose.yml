@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+
+  ## Google OAuth - Single Sign On using OAuth 2.0
+  oauth:
+    container_name: oauth
+    image: thomseddon/traefik-forward-auth:latest
+    restart: always
+    networks:
+      - traefik_proxy
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SECRET=${GOOGLE_OAUTH_SECRET}
+      - COOKIE_DOMAIN=${DOMAIN_NAME}
+      - INSECURE_COOKIE=false
+      - AUTH_HOST=oauth.${DOMAIN_NAME}
+      - URL_PATH=/_oauth
+      - WHITELIST=${ADMIN_EMAIL}
+      - LOG_LEVEL=trace
+      - LOG_FORMAT=text
+      - LIFETIME=2592000 # 30 days
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.oauth-rtr.entrypoints=https"
+      - "traefik.http.routers.oauth-rtr.rule=Host(`oauth.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.oauth-rtr.middlewares=chain-oauth@file,rate-limit@file"
+      ## HTTP Services
+      - "traefik.http.routers.oauth-rtr.service=oauth-svc"
+      - "traefik.http.services.oauth-svc.loadbalancer.server.port=4181"
+
+networks:
+  traefik_proxy:
+    external: true
+  socket_proxy:
+    external: true

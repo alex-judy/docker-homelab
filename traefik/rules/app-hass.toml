@@ -1,0 +1,15 @@
+[http.routers]
+  [http.routers.hass-rtr]
+      entryPoints = ["https"]
+      rule = "Host(`hass.louhome.xyz`)"
+      service = "hass-svc"
+      middlewares = ["secure-headers"]
+      [http.routers.hass-rtr.tls]
+        certresolver = "cloudflare"
+
+[http.services]
+  [http.services.hass-svc]
+    [http.services.hass-svc.loadBalancer]
+      passHostHeader = true
+      [[http.services.hass-svc.loadBalancer.servers]]
+        url = "http://192.168.1.10:8123" # or whatever your external host's IP:port is

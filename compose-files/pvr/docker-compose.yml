@@ -1,0 +1,158 @@
+version: "3.9"
+services:
+
+  ########## Media Automation ##########
+
+  ## Radarr – Movie Download and Management
+  radarr:
+    container_name: radarr
+    image: linuxserver/radarr:latest
+    restart: always
+    networks:
+      traefik_proxy:
+        ipv4_address: 192.168.50.245
+    ports:
+      - "7878:7878"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/configs/radarr:/config
+      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $MEDIA_DIR/movies/HD:/movies
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.radarr-rtr.entrypoints=https"
+      - "traefik.http.routers.radarr-rtr.rule=Host(`radarr.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.radarr-rtr.priority=10"
+      ## Middlewares
+      - "traefik.http.routers.radarr-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.radarr-rtr.service=radarr-svc"
+      - "traefik.http.services.radarr-svc.loadbalancer.server.port=7878"
+      ## API Forward Auth Bypass
+      - "traefik.http.routers.radarr-bypass.entrypoints=https"
+      - "traefik.http.routers.radarr-bypass.rule=Host(`radarr.${DOMAIN_NAME}`) && (Headers(`X-Api-Key`, `$RADARR_API_KEY`) || Query(`apikey`, `$RADARR_API_KEY`))"
+      - "traefik.http.routers.radarr-bypass.priority=20"
+      - "traefik.http.routers.radarr-bypass.service=radarr-svc"
+
+  ## Radarr4K – Movie Download and Management
+  radarr4k:
+    container_name: radarr4k
+    image: linuxserver/radarr:latest
+    restart: always
+    networks:
+      traefik_proxy:
+        ipv4_address: 192.168.50.248
+    ports:
+      - "7879:7878"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/configs/radarr4k:/config
+      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $MEDIA_DIR/movies/UHD-4K:/movies
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.radarr4k-rtr.entrypoints=https"
+      - "traefik.http.routers.radarr4k-rtr.rule=Host(`radarr4k.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.radarr4k-rtr.priority=10"
+      ## Middlewares
+      - "traefik.http.routers.radarr4k-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.radarr4k-rtr.service=radarr4k-svc"
+      - "traefik.http.services.radarr4k-svc.loadbalancer.server.port=7878"
+      ## API Forward Auth Bypass
+      - "traefik.http.routers.radarr4k-bypass.entrypoints=https"
+      - "traefik.http.routers.radarr4k-bypass.rule=Host(`radarr4k.${DOMAIN_NAME}`) && (Headers(`X-Api-Key`, `$RADARR4K_API_KEY`) || Query(`apikey`, `$RADARR4K_API_KEY`))"
+      - "traefik.http.routers.radarr4k-bypass.priority=20"
+      - "traefik.http.routers.radarr4k-bypass.service=radarr4k-svc"
+
+  ## Sonarr – TV Show Download and Management
+  sonarr:
+    container_name: sonarr
+    image: linuxserver/sonarr:latest
+    restart: always
+    networks:
+      traefik_proxy:
+        ipv4_address: 192.168.50.246
+    ports:
+      - "8989:8989"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/configs/sonarr:/config
+      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $MEDIA_DIR/tv/HD:/tv
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.sonarr-rtr.entrypoints=https"
+      - "traefik.http.routers.sonarr-rtr.rule=Host(`sonarr.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.sonarr-rtr.priority=10"
+      ## Middlewares
+      - "traefik.http.routers.sonarr-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.sonarr-rtr.service=sonarr-svc"
+      - "traefik.http.services.sonarr-svc.loadbalancer.server.port=8989"
+      ## API Forward Auth Bypass
+      - "traefik.http.routers.sonarr-bypass.entrypoints=https"
+      - "traefik.http.routers.sonarr-bypass.rule=Host(`sonarr.${DOMAIN_NAME}`) && (Headers(`X-Api-Key`, `$SONARR_API_KEY`) || Query(`apikey`, `$SONARR_API_KEY`))"
+      - "traefik.http.routers.sonarr-bypass.priority=20"
+      - "traefik.http.routers.sonarr-bypass.service=sonarr-svc"
+
+  ## Sonarr4K – TV Show Download and Management
+  sonarr4k:
+    container_name: sonarr4k
+    image: linuxserver/sonarr:latest
+    restart: always
+    networks:
+      traefik_proxy:
+        ipv4_address: 192.168.50.247
+    ports:
+      - "8987:8989"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $DOCKER_DIR/configs/sonarr4k:/config
+      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $MEDIA_DIR/tv/UHD-4K:/tv
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.sonarr4k-rtr.entrypoints=https"
+      - "traefik.http.routers.sonarr4k-rtr.rule=Host(`sonarr4k.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.sonarr4k-rtr.priority=10"
+      ## Middlewares
+      - "traefik.http.routers.sonarr4k-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.sonarr4k-rtr.service=sonarr4k-svc"
+      - "traefik.http.services.sonarr4k-svc.loadbalancer.server.port=8989"
+      ## API Forward Auth Bypass
+      - "traefik.http.routers.sonarr4k-bypass.entrypoints=https"
+      - "traefik.http.routers.sonarr4k-bypass.rule=Host(`sonarr4k.${DOMAIN_NAME}`) && (Headers(`X-Api-Key`, `$SONARR4K_API_KEY`) || Query(`apikey`, `$SONARR4K_API_KEY`))"
+      - "traefik.http.routers.sonarr4k-bypass.priority=20"
+      - "traefik.http.routers.sonarr4k-bypass.service=sonarr4k-svc"
+
+networks:
+  traefik_proxy:
+    external: true
+  socket_proxy:
+    external: true

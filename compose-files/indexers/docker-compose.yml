@@ -1,0 +1,53 @@
+version: "3.9"
+services:
+
+  ########## Indexers ##########
+
+  ## Prowlarr - Indexer for usenet and torrents
+  prowlarr:
+    container_name: prowlarr
+    image: hotio/prowlarr:nightly
+    networks:
+      - traefik_proxy
+    restart: always
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID
+      - PGID
+      - TZ
+      - UMASK=002
+    volumes:
+      - $DOCKER_DIR/configs/prowlarr:/config
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.prowlarr-rtr.entrypoints=https"
+      - "traefik.http.routers.prowlarr-rtr.rule=Host(`prowlarr.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.prowlarr-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.prowlarr-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.prowlarr-rtr.service=prowlarr-svc"
+      - "traefik.http.services.prowlarr-svc.loadbalancer.server.port=9696"
+
+  flaresolverr:
+    # DockerHub mirror flaresolverr/flaresolverr:latest
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    networks:
+      - traefik_proxy
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+
+networks:
+  traefik_proxy:
+    external: true
+  socket_proxy:
+    external: true

@@ -1,0 +1,33 @@
+# DOCKER TRAEFIK 2
+alias network='doppler run -- docker compose -f $DOCKER_DIR/compose-files/network/docker-compose.yml'
+alias bittor='doppler run -- docker compose -f $DOCKER_DIR/compose-files/bittor/docker-compose.yml'
+alias database='doppler run -- docker compose -f $DOCKER_DIR/compose-files/database/docker-compose.yml'
+alias indexers='doppler run -- docker compose -f $DOCKER_DIR/compose-files/indexers/docker-compose.yml'
+alias management='doppler run -- docker compose -f $DOCKER_DIR/compose-files/management/docker-compose.yml'
+alias monitoring='doppler run -- docker compose -f $DOCKER_DIR/compose-files/monitoring/docker-compose.yml'
+alias games='doppler run -- docker compose -f $DOCKER_DIR/compose-files/games/docker-compose.yml'
+alias media='doppler run -- docker compose -f $DOCKER_DIR/compose-files/media/docker-compose.yml'
+alias other='doppler run -- docker compose -f $DOCKER_DIR/compose-files/other/docker-compose.yml'
+alias pvr='doppler run -- docker compose -f $DOCKER_DIR/compose-files/pvr/docker-compose.yml'
+alias security='doppler run -- docker compose -f $DOCKER_DIR/compose-files/security/docker-compose.yml'
+alias smarthome='doppler run -- docker compose -f $DOCKER_DIR/compose-files/smarthome/docker-compose.yml'
+alias utility='doppler run -- docker compose -f $DOCKER_DIR/compose-files/utility/docker-compose.yml'
+
+alias dcup='network up -d; bittor up -d; database up -d; indexers up -d; management up -d; monitoring up -d; media up -d; games up -d; other up -d; pvr up -d; security up -d; smarthome up -d; utility up -d;'
+alias dcrec='network up -d --force-recreate; bittor up -d --force-recreate; database up -d --force-recreate; indexers up -d --force-recreate; management up -d --force-recreate; monitoring up -d --force-recreate; media up -d --force-recreate; other up -d --force-recreate; pvr up -d --force-recreate; security up -d --force-recreate; smarthome up -d --force-recreate; utility up -d --force-recreate;'
+alias dcwipe='docker ps -aq | xargs docker stop | xargs docker rm'
+alias dcstop='docker kill $(docker ps -q)'
+
+alias dcstop2='dcrun2 stop'
+alias dcrestart2='dcrun2 restart '
+alias dcpull2='cd /home/$USER/docker ; docker compose -f /home/$USER/docker-compose.yml  pull'
+
+# DOCKER TRAEFIK 2 VPN
+alias dcrun2v='cd /home/$USER/docker ; docker compose -f /home/$USER/docker-compose-vpn.yml '
+alias dclogs2v='cd /home/$USER/docker ; docker compose -f /home/$USER/docker-compose-vpn.yml logs -tf --tail="50" '
+alias dcup2v='dcrun2v up -d'
+alias dcdown2v='dcrun2v down'
+alias dcrec2v='dcrun2v up -d --force-recreate'
+alias dcstop2v='dcrun2v stop'
+alias dcrestart2v='dcrun2v restart '
+alias dcpull2v='cd /home/$USER/docker ; docker compose -f /home/$USER/docker-compose-vpn.yml  pull'

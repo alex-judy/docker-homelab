@@ -1,0 +1,66 @@
+version: "3.9"
+services:
+
+  ########## Databases ##########
+
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    depends_on:
+      - influxdb
+    links:
+      - influxdb
+    networks:
+      - influxdb
+      - socket_proxy
+      - traefik_proxy
+    restart: always
+    environment:
+      HOST_PROC: /rootfs/proc
+      HOST_SYS: /rootfs/sys
+      HOST_ETC: /rootfs/etc
+    volumes:
+      - $DOCKER_DIR/configs/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/rootfs/sys:ro
+      - /proc:/rootfs/proc:ro
+      - /etc:/rootfs/etc:ro
+      - /:/hostfs:ro
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    restart: always
+    ports:
+      - 8086:8086
+    networks:
+      - influxdb
+      - traefik_proxy
+    volumes:
+      - $DOCKER_DIR/configs/influxdb:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=louhome
+      - DOCKER_INFLUXDB_INIT_BUCKET=telegraf
+      - DOCKER_INFLUXDB_INIT_RETENTION=2d
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.influxdb-rtr.entrypoints=https"
+      - "traefik.http.routers.influxdb-rtr.rule=Host(`influxdb.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.influxdb-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.influxdb-rtr.service=influxdb-svc"
+      - "traefik.http.services.influxdb-svc.loadbalancer.server.port=8086"
+
+networks:
+  traefik_proxy:
+    external: true
+  socket_proxy:
+    external: true
+  influxdb:
+    external: true
