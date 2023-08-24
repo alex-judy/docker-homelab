@@ -28,6 +28,32 @@ services:
   #     - "traefik.http.routers.uptime-kuma-rtr.service=uptime-kuma-svc"
   #     - "traefik.http.services.uptime-kuma-svc.loadbalancer.server.port=3001"
 
+  dash:
+    image: mauricenino/dashdot:latest
+    container_name: dash
+    restart: unless-stopped
+    privileged: true
+    networks:
+      - traefik_proxy
+      - socket_proxy
+    ports:
+      - 8082:3001
+    volumes:
+      - /:/mnt/host:ro
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.dash-rtr.entrypoints=https"
+      - "traefik.http.routers.dash-rtr.rule=Host(`dash.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.dash-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.dash-rtr.service=dash-svc"
+      - "traefik.http.services.dash-svc.loadbalancer.server.port=3001"
+      ## HTTP Headers
+      - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.middlewares.cors.headers.customFrameOptionsValue=SAMEORIGIN"
+
   ## Dozzle - Real-time Docker Log Viewer
   dozzle:
     image: amir20/dozzle:latest
@@ -36,6 +62,8 @@ services:
     networks:
       - traefik_proxy
       - socket_proxy
+    ports:
+      - 3661:8080
     security_opt:
       - no-new-privileges:true
     environment:
@@ -55,7 +83,7 @@ services:
       - "traefik.http.routers.dozzle-rtr.middlewares=chain-oauth@file"
       ## HTTP Services
       - "traefik.http.routers.dozzle-rtr.service=dozzle-svc"
-      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8111"
+      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8080"
 
   ## Tautulli – Monitoring Plex Usage
   tautulli:

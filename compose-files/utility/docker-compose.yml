@@ -16,23 +16,23 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      # - /var/run/docker.sock:/var/run/docker.sock:ro # Connect to docker-socket-proxy tcp://docker-socket-proxy:2375
+      - /var/run/docker.sock:/var/run/docker.sock # Connect to docker-socket-proxy tcp://docker-socket-proxy:2375
       - $DOCKER_DIR/configs/ouroboros:/root/.docker/config.json:ro
     environment:
       - TZ
       - CLEANUP=true
-      - CRON="0 4 * * 0" # Run at 4AM every Sunday
+      - CRON="0 5 * * 1" # Run at 5AM every Monday
       - LATEST=false
-      - RUN_ONCE=false # Default false
       - LOG_LEVEL=info
       - SELF_UPDATE=true
       - NOTIFIERS=${DISCORD_NOTIFY} # Discord Webhook URL
-      - DOCKER_SOCKETS=tcp://socket-proxy:2375
+      - RUN_ONCE=false # Default false
+      - DRY_RUN=false # Best used with RUN_ONCE for config testing
 
   ## Who Am I?? - Show Headers
   whoami:
     container_name: whoami
-    image: containous/whoami:v1.3.0
+    image: containous/whoami:latest
     restart: always
     networks:
       - traefik_proxy

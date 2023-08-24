@@ -17,6 +17,7 @@ services:
     #      - no-new-privileges:true
     volumes:
       - $DOCKER_DIR/configs/vscode:/config
+      - $HOME:$HOME
     environment:
       - PUID
       - PGID
@@ -26,11 +27,12 @@ services:
       - SUDO_PASSWORD=${VSCODE_PASSWORD} #optional
       # - SUDO_PASSWORD_HASH= #optional
       - PROXY_DOMAIN=vscode.${DOMAIN_NAME}
+      - DEFAULT_WORKSPACE=$HOME
     labels:
       - "traefik.enable=true"
       ## HTTP Routers
       - "traefik.http.routers.vscode-rtr.entrypoints=https"
-      - "traefik.http.routers.vscode-rtr.rule=Host(`vscode.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.vscode-rtr.rule=Host(`code.${DOMAIN_NAME}`)"
       ## Middlewares
       - "traefik.http.routers.vscode-rtr.middlewares=chain-oauth@file"
       ## HTTP Services
@@ -156,7 +158,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - $DOCKER_DIR/data/filebrowser:/data
+      - /:/data
       - $DOCKER_DIR/configs/filebrowser:/config
     environment:
       - PUID
