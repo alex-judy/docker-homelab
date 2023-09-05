@@ -3,31 +3,51 @@ services:
 
   ########## Docker Utilities ##########
 
-  ## Ouroboros
-  # https://hub.docker.com/r/pyouroboros/ouroboros/
-  # https://github.com/pyouroboros/ouroboros/wiki
-  ouroboros:
-    container_name: ouroboros
-    image: pyouroboros/ouroboros:latest
+  ## Watchtower
+  # https://hub.docker.com/r/containrrr/watchtower
+  # 
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower
     restart: always
     networks:
       - traefik_proxy
       - socket_proxy
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock # Connect to docker-socket-proxy tcp://docker-socket-proxy:2375
-      - $DOCKER_DIR/configs/ouroboros:/root/.docker/config.json:ro
-    environment:
-      - TZ
-      - CLEANUP=true
-      - CRON="0 5 * * 1" # Run at 5AM every Monday
-      - LATEST=false
-      - LOG_LEVEL=info
-      - SELF_UPDATE=true
-      - NOTIFIERS=${DISCORD_NOTIFY} # Discord Webhook URL
-      - RUN_ONCE=false # Default false
-      - DRY_RUN=false # Best used with RUN_ONCE for config testing
+    environment: 
+      # Set to true for testing configuration changes
+      WATCHTOWER_RUN_ONCE: false 
+      DOCKER_HOST: tcp://socket-proxy:2375
+      # Run at 1AM every Monday
+      WATCHTOWER_SCHEDULE: "0 0 1 * * 1" 
+      TZ: TZ
+      WATCHTOWER_CLEANUP: true 
+      WATCHTOWER_DEBUG: true     
+      WATCHTOWER_NOTIFICATION_REPORT: true
+      WATCHTOWER_NOTIFICATION_URL: ${DISCORD_NOTIFY}
+      WATCHTOWER_NOTIFICATION_TEMPLATE: |-
+          {{- if .Report -}}
+            {{- with .Report -}}
+          {{len .Scanned}} Scanned, {{len .Updated}} Updated, {{len .Failed}} Failed
+                {{- range .Updated}}
+          - {{.Name}} ({{.ImageName}}): {{.CurrentImageID.ShortID}} updated to {{.LatestImageID.ShortID}}
+                {{- end -}}
+                {{- range .Fresh}}
+          - {{.Name}} ({{.ImageName}}): {{.State}}
+              {{- end -}}
+              {{- range .Skipped}}
+          - {{.Name}} ({{.ImageName}}): {{.State}}: {{.Error}}
+              {{- end -}}
+              {{- range .Failed}}
+          - {{.Name}} ({{.ImageName}}): {{.State}}: {{.Error}}
+              {{- end -}}
+            {{- end -}}
+          {{- else -}}
+            {{range .Entries -}}{{.Message}}{{"\n"}}{{- end -}}
+          {{- end -}}
+
+      WATCHTOWER_NOTIFICATIONS: shoutrrr
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock
 
   ## Who Am I?? - Show Headers
   whoami:
