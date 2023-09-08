@@ -17,7 +17,8 @@ services:
       - no-new-privileges:true
     volumes:
       - $DOCKER_DIR/configs/radarr:/config
-      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $DOWNLOADS_DIR/torrents:/downloads/torrents
+      - $DOWNLOADS_DIR/usenet/complete/movies-hd:/downloads/complete/movies-hd
       - $MEDIA_DIR/movies/HD:/movies
     environment:
       - PUID
@@ -54,7 +55,8 @@ services:
       - no-new-privileges:true
     volumes:
       - $DOCKER_DIR/configs/radarr4k:/config
-      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $DOWNLOADS_DIR/torrents:/downloads/torrents
+      - $DOWNLOADS_DIR/usenet/complete/movies-uhd:/downloads/complete/movies-uhd
       - $MEDIA_DIR/movies/UHD-4K:/movies
     environment:
       - PUID
@@ -91,7 +93,8 @@ services:
       - no-new-privileges:true
     volumes:
       - $DOCKER_DIR/configs/sonarr:/config
-      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $DOWNLOADS_DIR/torrents:/downloads/torrents
+      - $DOWNLOADS_DIR/usenet/complete/tv-hd:/downloads/complete/tv-hd
       - $MEDIA_DIR/tv/HD:/tv
     environment:
       - PUID
@@ -128,7 +131,8 @@ services:
       - no-new-privileges:true
     volumes:
       - $DOCKER_DIR/configs/sonarr4k:/config
-      - $DOWNLOADS_DIR/torrents/completed:/data/downloads/torrents/completed
+      - $DOWNLOADS_DIR/torrents:/downloads/torrents
+      - $DOWNLOADS_DIR/usenet/complete/tv-uhd:/downloads/complete/tv-uhd
       - $MEDIA_DIR/tv/UHD-4K:/tv
     environment:
       - PUID
@@ -150,6 +154,74 @@ services:
       - "traefik.http.routers.sonarr4k-bypass.rule=Host(`sonarr4k.${DOMAIN_NAME}`) && (Headers(`X-Api-Key`, `$SONARR4K_API_KEY`) || Query(`apikey`, `$SONARR4K_API_KEY`))"
       - "traefik.http.routers.sonarr4k-bypass.priority=20"
       - "traefik.http.routers.sonarr4k-bypass.service=sonarr4k-svc"
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    networks:
+      traefik_proxy:
+        ipv4_address: 192.168.50.240
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    volumes:
+      - $DOCKER_DIR/configs/bazarr:/config
+      - $MEDIA_DIR/movies/HD:/movies #optional
+      - $MEDIA_DIR/tv/HD:/tv #optional
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.bazarr-rtr.entrypoints=https"
+      - "traefik.http.routers.bazarr-rtr.rule=Host(`bazarr.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.bazarr-rtr.priority=10"
+      ## Middlewares
+      - "traefik.http.routers.bazarr-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.bazarr-rtr.service=bazarr-svc"
+      - "traefik.http.services.bazarr-svc.loadbalancer.server.port=6767"
+      ## API Forward Auth Bypass
+      - "traefik.http.routers.bazarr-bypass.entrypoints=https"
+      # - "traefik.http.routers.bazarr-bypass.rule=Host(`bazarr.${DOMAIN_NAME}`) && (Headers(`X-Api-Key`, `$BAZARR_API_KEY`) || Query(`apikey`, `$BAZARR_API_KEY`))"
+      - "traefik.http.routers.bazarr-bypass.priority=20"
+      - "traefik.http.routers.bazarr-bypass.service=bazarr-svc"
+
+  bazarr4k:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr4k
+    networks:
+      traefik_proxy:
+        ipv4_address: 192.168.50.239
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    volumes:
+      - $DOCKER_DIR/configs/bazarr4k:/config
+      - $MEDIA_DIR/movies/UHD-4K:/movies #optional
+      - $MEDIA_DIR/tv/UHD-4K:/tv #optional
+    ports:
+      - 6768:6767
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.bazarr4k-rtr.entrypoints=https"
+      - "traefik.http.routers.bazarr4k-rtr.rule=Host(`bazarr4k.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.bazarr4k-rtr.priority=10"
+      ## Middlewares
+      - "traefik.http.routers.bazarr4k-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.bazarr4k-rtr.service=bazarr4k-svc"
+      - "traefik.http.services.bazarr4k-svc.loadbalancer.server.port=6767"
+      ## API Forward Auth Bypass
+      - "traefik.http.routers.bazarr4k-bypass.entrypoints=https"
+      # - "traefik.http.routers.bazarr4k-bypass.rule=Host(`bazarr4k.${DOMAIN_NAME}`) && (Headers(`X-Api-Key`, `$bazarr4k_API_KEY`) || Query(`apikey`, `$bazarr4k_API_KEY`))"
+      - "traefik.http.routers.bazarr4k-bypass.priority=20"
+      - "traefik.http.routers.bazarr4k-bypass.service=bazarr4k-svc"
 
 networks:
   traefik_proxy:
