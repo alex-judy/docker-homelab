@@ -193,8 +193,6 @@ services:
 #      - /location/of/logs:/logs/
     environment:
       - DOCKER_ENABLE_SECURITY=true
-      - SECURITY_INITIALLOGIN_USERNAME="admin"
-      - SECURITY_INITIALLOGIN_PASSWORD="xRbJHHeZT8@mshaFceduGpBx"
     labels:
       - "traefik.enable=true"
       ## HTTP Routers
