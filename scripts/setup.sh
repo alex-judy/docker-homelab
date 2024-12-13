@@ -26,9 +26,6 @@ if confirm; then
     read -r -p "Enter your PGID: " pgid
     echo "export PUID=$pgid" >> ~/.bashrc
 
-    read -r -p "Enter your Server IP: " serverIp
-    echo "export SERVER_IP=$serverIp" >> ~/.bashrc
-
     read -r -p "Enter your DNS Resolver: [8.8.8.8]" dnsResolver
     dnsResolver="${dnsResolver:-8.8.8.8}"
     echo "export DNS_RESOLVER=$dnsResolver" >> ~/.bashrc
@@ -158,6 +155,7 @@ echo "Creating docker networks..."
 sudo docker network create --gateway 192.168.50.1 --subnet 192.168.50.0/24 traefik_proxy
 sudo docker network create --gateway 192.168.100.1 --subnet 192.168.100.0/24 socket_proxy
 sudo docker network create --gateway 192.168.150.1 --subnet 192.168.150.0/24 influxdb
+sudo docker network create --gateway 192.168.200.1 --subnet 192.168.200.0/24 cloudflared
 
 sudo chown -R "$USER:$USER" /mnt
 sudo chmod -R a=,a+rX,u+w,g+w /mnt

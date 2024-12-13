@@ -1,4 +1,4 @@
-version: "3.9"
+
 services:
 
   ########## Container Management ##########
@@ -35,7 +35,7 @@ services:
       - "traefik.http.services.portainer-svc.loadbalancer.server.port=9000"
 
   homepage:
-    image: ghcr.io/benphelps/homepage:latest
+    image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
     networks:
       - traefik_proxy
@@ -47,10 +47,10 @@ services:
       - $DOCKER_DIR/configs/homepage:/app/config # Make sure your local config directory exists
       - /var/run/docker.sock:/var/run/docker.sock:ro # (optional) For docker integrations
       - /mnt/media:/mnt/media:ro
-    # environment:
-    #   - PUID
-    #   - PGID
-    #   - TZ
+    environment:
+      - PUID
+      - PGID
+      - TZ
     labels:
       - "traefik.enable=true"
       ## HTTP Routers
@@ -73,6 +73,7 @@ services:
     volumes:
       - $DOCKER_DIR/configs/homarr:/app/data/configs
       - $DOCKER_DIR/configs/homarr/icons:/app/public/icons
+      - $DOCKER_DIR/configs/homarr/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - '7575:7575'

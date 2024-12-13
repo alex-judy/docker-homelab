@@ -1,9 +1,9 @@
   [http.middlewares.chain-oauth]
     [http.middlewares.chain-oauth.chain]
-      middlewares = [ "rate-limit", "secure-headers", "ssl-redirect", "oauth"]
+      middlewares = [ "rate-limit", "secure-headers", "ssl-redirect", "oauth" ]
 
     [http.middlewares.chain-noauth.chain]
-      middlewares = [ "rate-limit", "ssl-redirect", "secure-headers"]
+      middlewares = [ "traefik-bouncer", "rate-limit", "ssl-redirect", "secure-headers" ]
 
     [http.middlewares.basic-chain.chain]
-      middlewares = ["secure-headers", "basic-auth"]
+      middlewares = [ "traefik-bouncer", "secure-headers", "basic-auth" ]

@@ -1,15 +1,15 @@
-[http.routers]
-  [http.routers.uptime-rtr]
-      entryPoints = ["https"]
-      rule = "Host(`uptime.louhome.xyz`)"
-      service = "uptime-svc"
-      middlewares = ["chain-oauth"]
-      [http.routers.uptime-rtr.tls]
-        certresolver = "cloudflare"
+# [http.routers]
+#   [http.routers.uptime-rtr]
+#       entryPoints = ["https"]
+#       rule = "Host(`uptime.louhome.xyz`)"
+#       service = "uptime-svc"
+#       middlewares = ["chain-oauth"]
+#       [http.routers.uptime-rtr.tls]
+#         certresolver = "cloudflare"
 
-[http.services]
-  [http.services.uptime-svc]
-    [http.services.uptime-svc.loadBalancer]
-      passHostHeader = true
-      [[http.services.uptime-svc.loadBalancer.servers]]
-        url = "http://192.168.1.10:3001" # or whatever your external host's IP:port is
+# [http.services]
+#   [http.services.uptime-svc]
+#     [http.services.uptime-svc.loadBalancer]
+#       passHostHeader = true
+#       [[http.services.uptime-svc.loadBalancer.servers]]
+#         url = "http://192.168.1.10:3001" # or whatever your external host's IP:port is
