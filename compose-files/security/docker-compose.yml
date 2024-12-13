@@ -1,4 +1,4 @@
-version: "3.9"
+
 services:
 
   ## Google OAuth - Single Sign On using OAuth 2.0

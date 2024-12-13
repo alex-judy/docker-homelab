@@ -1,4 +1,4 @@
-version: "3.9"
+
 services:
 
   ########## Container Management ##########
@@ -34,6 +34,35 @@ services:
       - "traefik.http.routers.portainer-rtr.service=portainer-svc"
       - "traefik.http.services.portainer-svc.loadbalancer.server.port=9000"
 
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    networks:
+      - traefik_proxy
+      - socket_proxy
+    restart: unless-stopped
+    ports:
+      - 3020:3000
+    volumes:
+      - $DOCKER_DIR/configs/homepage:/app/config # Make sure your local config directory exists
+      - /var/run/docker.sock:/var/run/docker.sock:ro # (optional) For docker integrations
+      - /mnt/media:/mnt/media:ro
+    environment:
+      - PUID
+      - PGID
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.homepage-rtr.entrypoints=https"
+      - "traefik.http.routers.homepage-rtr.rule=Host(`homepage.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.homepage-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.homepage-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.homepage-rtr.service=homepage-svc"
+      - "traefik.http.services.homepage-svc.loadbalancer.server.port=3000"
+
   ## Homarr - Home Dashboard
   homarr:
     container_name: homarr
@@ -44,6 +73,7 @@ services:
     volumes:
       - $DOCKER_DIR/configs/homarr:/app/data/configs
       - $DOCKER_DIR/configs/homarr/icons:/app/public/icons
+      - $DOCKER_DIR/configs/homarr/data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - '7575:7575'

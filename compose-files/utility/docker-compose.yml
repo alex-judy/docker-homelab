@@ -1,38 +1,56 @@
-version: "3.9"
+
 services:
 
   ########## Docker Utilities ##########
 
-  ## Ouroboros
-  # https://hub.docker.com/r/pyouroboros/ouroboros/
-  # https://github.com/pyouroboros/ouroboros/wiki
-  ouroboros:
-    container_name: ouroboros
-    image: pyouroboros/ouroboros:latest
+  ## Watchtower
+  # https://hub.docker.com/r/containrrr/watchtower
+  # 
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower:latest
     restart: always
     networks:
       - traefik_proxy
       - socket_proxy
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      # - /var/run/docker.sock:/var/run/docker.sock:ro # Connect to docker-socket-proxy tcp://docker-socket-proxy:2375
-      - $DOCKER_DIR/configs/ouroboros:/root/.docker/config.json:ro
-    environment:
-      - TZ
-      - CLEANUP=true
-      - CRON="0 4 * * 0" # Run at 4AM every Sunday
-      - LATEST=false
-      - RUN_ONCE=false # Default false
-      - LOG_LEVEL=info
-      - SELF_UPDATE=true
-      - NOTIFIERS=${DISCORD_NOTIFY} # Discord Webhook URL
-      - DOCKER_SOCKETS=tcp://socket-proxy:2375
+    environment: 
+      # Set to true for testing configuration changes
+      WATCHTOWER_RUN_ONCE: false 
+      DOCKER_HOST: tcp://socket-proxy:2375
+      # Run at 1AM every Monday
+      WATCHTOWER_SCHEDULE: "0 0 1 * * 1" 
+      TZ: TZ
+      WATCHTOWER_CLEANUP: true 
+      WATCHTOWER_DEBUG: true     
+      WATCHTOWER_NOTIFICATION_REPORT: true
+      WATCHTOWER_NOTIFICATION_URL: ${DISCORD_NOTIFY}
+      WATCHTOWER_NOTIFICATION_TEMPLATE: |-
+          {{- if .Report -}}
+            {{- with .Report -}}
+          {{len .Scanned}} Scanned, {{len .Updated}} Updated, {{len .Failed}} Failed
+                {{- range .Updated}}
+          - {{.Name}} ({{.ImageName}}): {{.CurrentImageID.ShortID}} updated to {{.LatestImageID.ShortID}}
+                {{- end -}}
+                {{- range .Fresh}}
+          - {{.Name}} ({{.ImageName}}): {{.State}}
+              {{- end -}}
+              {{- range .Skipped}}
+          - {{.Name}} ({{.ImageName}}): {{.State}}: {{.Error}}
+              {{- end -}}
+              {{- range .Failed}}
+          - {{.Name}} ({{.ImageName}}): {{.State}}: {{.Error}}
+              {{- end -}}
+            {{- end -}}
+          {{- else -}}
+            {{range .Entries -}}{{.Message}}{{"\n"}}{{- end -}}
+          {{- end -}}
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock
 
   ## Who Am I?? - Show Headers
   whoami:
     container_name: whoami
-    image: containous/whoami:v1.3.0
+    image: containous/whoami:latest
     restart: always
     networks:
       - traefik_proxy
@@ -50,6 +68,29 @@ services:
       ## HTTP Services
       - "traefik.http.routers.whoami-rtr.service=whoami-svc"
       - "traefik.http.services.whoami-svc.loadbalancer.server.port=80"
+
+  ## OpenSpeedtest
+  speedtest:
+    container_name: speedtest
+    image: openspeedtest/latest
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+    ports:
+      - '3010:3000'
+      - '3011:3001'
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      # HTTP Routers
+      - "traefik.http.routers.speedtest-rtr.entrypoints=https"
+      - "traefik.http.routers.speedtest-rtr.rule=Host(`speedtest.${DOMAIN_NAME}`)"
+      ## Middlewares
+      - "traefik.http.routers.speedtest-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.speedtest-rtr.service=speedtest-svc"
+      - "traefik.http.services.speedtest-svc.loadbalancer.server.port=3000"
 
 networks:
   traefik_proxy:

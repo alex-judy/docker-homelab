@@ -1,16 +1,5 @@
 #!/bin/bash
-#Installs docker and docker-compose v2 and copies configured files to user's home directory.
-
-# Add the following to the bottom of your .bashrc file
-# export TRANSMISSION_PORT="9091"
-# export RADARR_PORT="7878"
-# export RADARR4K_PORT="7879"
-# export SONARR_PORT="8989"
-# export SONARR4K_PORT="8987"
-# export LIDARR_PORT="8686"
-# export HYDRA_PORT="5076"
-# export JACKETT_PORT="9117"
-# export PROWLARR_PORT="9696"
+#Installs docker and docker compose, doppler (secrets management), and copies configured files to user's home directory.
 
 function confirm() {
     while true; do
@@ -24,7 +13,7 @@ function confirm() {
     done
 }
 
-# read -r -p "Do you want to run the .bashrc environment configuration? This should be run at initial setup unless you have already configured your environment variables: [y/n]" setup
+echo "The following setup will configure environment variables. This should be run at initial setup unless you have already configured your environment variables."
 
 if confirm; then
     read -r -p "Enter your Timezone: [America/New_York]" tz
@@ -36,9 +25,6 @@ if confirm; then
 
     read -r -p "Enter your PGID: " pgid
     echo "export PUID=$pgid" >> ~/.bashrc
-
-    read -r -p "Enter your Server IP: " serverIp
-    echo "export SERVER_IP=$serverIp" >> ~/.bashrc
 
     read -r -p "Enter your DNS Resolver: [8.8.8.8]" dnsResolver
     dnsResolver="${dnsResolver:-8.8.8.8}"
@@ -137,9 +123,6 @@ mkdir "$HOME/bin"
 echo "Setting docker folder permissions..."
 sudo chmod -R 775 "$DOCKER_DIR"
 
-echo "Copying files to $DOCKER_DIR..."
-mkdir "$DOCKER_DIR"/compose-files
-
 # Absolute paths are required when creating soft symlink
 ln -s "$HOME"/src/homelab/compose-files "$DOCKER_DIR"
 
@@ -172,6 +155,10 @@ echo "Creating docker networks..."
 sudo docker network create --gateway 192.168.50.1 --subnet 192.168.50.0/24 traefik_proxy
 sudo docker network create --gateway 192.168.100.1 --subnet 192.168.100.0/24 socket_proxy
 sudo docker network create --gateway 192.168.150.1 --subnet 192.168.150.0/24 influxdb
+sudo docker network create --gateway 192.168.200.1 --subnet 192.168.200.0/24 cloudflared
+
+sudo chown -R "$USER:$USER" /mnt
+sudo chmod -R a=,a+rX,u+w,g+w /mnt
 
 doppler run -- docker compose -f "$DOCKER_DIR"/compose-files/network/docker-compose.yml up -d --force-recreate 
 doppler run -- docker compose -f "$DOCKER_DIR"/compose-files/bittor/docker-compose.yml up -d --force-recreate 

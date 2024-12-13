@@ -1,4 +1,4 @@
-version: "3.9"
+
 services:
 
   ########## Media and Media Requests ##########
@@ -14,7 +14,7 @@ services:
       - TZ
       - DISCORD__TOKEN=${DISCORD_TOKEN}
       - OVERSEERR__API=${OVERSEER_API_KEY}
-      - OVERSEERR__URL=$SERVER_IP:5055
+      - OVERSEERR__URL=https://overseerr.${DOMAIN_NAME}
       # - RADARR__API=
       # - RADARR__URL=
       # - SONARR__API=
@@ -95,9 +95,8 @@ services:
       - PUID
       - PGID
       - TZ
-      - VERSION=docker
-      - ADVERTISE_IP=$SERVER_IP,https://plex.${DOMAIN_NAME}:443
-      - ALLOWED_NETWORKS=192.168.1.0/24,172.16.0.0/16
+      # - ADVERTISE_IP=10.0.10.30,https://plex.${DOMAIN_NAME}:443
+      - ALLOWED_NETWORKS=10.0.10.0/24,10.0.1.0/24,10.0.20.0/24,172.16.0.0/16
       # - PLEX_CLAIM=
     labels:
       - "traefik.enable=true"
@@ -136,6 +135,70 @@ services:
       - "traefik.http.routers.plexWeb-rtr.priority=20"
       - "traefik.http.routers.plexWeb-rtr.middlewares=chain-oauth@file"
       - "traefik.http.routers.plexWeb-rtr.service=plex-svc"
+
+  calibre:
+    image: lscr.io/linuxserver/calibre:latest
+    container_name: calibre
+    networks:
+      - traefik_proxy
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID
+      - PGID
+      - TZ
+      # - PASSWORD= #optional
+      # - CLI_ARGS= #optional
+    volumes:
+      - $DOCKER_DIR/configs/calibre/config:/config
+      - $DOCKER_DIR/configs/calibre/uploads:/uploads #change before the ':'
+      - $DOCKER_DIR/configs/calibre/plugins:/plugins #change before the ':'
+      - $MEDIA_DIR/books/CalibreLibrary:/CalibreLibrary #this is where your ebooks will end up
+    ports:
+      - 8281:8080
+      - 8282:8181
+      - 8283:8081      
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.calibre-rtr.entrypoints=https"
+      - "traefik.http.routers.calibre-rtr.rule=Host(`calibre.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.calibre-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.calibre-rtr.middlewares=chain-oauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.calibre-rtr.service=calibre-svc"
+      - "traefik.http.services.calibre-svc.loadbalancer.server.port=5013"    
+
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web:latest
+    networks:
+      - traefik_proxy    
+    container_name: calibre-web
+    environment:
+      - PUID
+      - PGID
+      - TZ
+      # - DOCKER_MODS=linuxserver/mods:universal-calibre #optional
+      # - OAUTHLIB_RELAX_TOKEN_SCOPE=1 #optional
+    volumes:
+      - $DOCKER_DIR/configs/calibre-web/config:/config
+      - $MEDIA_DIR/books/CalibreLibrary:/books
+    ports:
+      - 8083:8083
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.calibre-web-rtr.entrypoints=https"
+      - "traefik.http.routers.calibre-web-rtr.rule=Host(`calibreweb.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.calibre-web-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.calibre-web-rtr.middlewares=chain-noauth@file"
+      ## HTTP Services
+      - "traefik.http.routers.calibre-web-rtr.service=calibre-web-svc"
+      - "traefik.http.services.calibre-web-svc.loadbalancer.server.port=8083"        
 
 networks:
   traefik_proxy:

@@ -1,0 +1,4 @@
+[http.middlewares]
+  [http.middlewares.crowdsec-traefik-bouncer.forwardAuth]
+    address = "http://crowdsec-traefik-bouncer:8080/api/v1/forwardAuth"
+    trustForwardHeader = true
